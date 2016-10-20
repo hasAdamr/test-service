@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package TEST;
+
+import "google/api/annotations.proto";
+
+service TestService {
+
+  // ReadContextTestValue will print the context value of "test" 
+  // which should be "truss"
+  rpc ReadContextTestValue (EmptyMessage) returns (EmptyMessage) {}
+
+  // ReadContextMetadata will print the values in the grpc.metadata of the context
+  // which should be "truss"
+  rpc ReadContextMetadata (EmptyMessage) returns (EmptyMessage) {}
+}
+
+message EmptyMessage {}
