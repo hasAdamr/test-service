@@ -7,10 +7,7 @@ import (
 	//jujuratelimit "github.com/juju/ratelimit"
 	//stdopentracing "github.com/opentracing/opentracing-go"
 	//"github.com/sony/gobreaker"
-	"fmt"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 
 	//"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
@@ -45,7 +42,6 @@ func New(conn *grpc.ClientConn /*, tracer stdopentracing.Tracer, logger log.Logg
 			svc.EncodeGRPCReadContextTestValueRequest,
 			svc.DecodeGRPCReadContextTestValueResponse,
 			pb.EmptyMessage{},
-			grpctransport.ClientBefore(PrintContextValues),
 			//grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "ReadContextTestValue", logger)),
 		).Endpoint()
 		//readcontexttestvalueEndpoint = opentracing.TraceClient(tracer, "ReadContextTestValue")(readcontexttestvalueEndpoint)
@@ -56,41 +52,8 @@ func New(conn *grpc.ClientConn /*, tracer stdopentracing.Tracer, logger log.Logg
 		//}))(readcontexttestvalueEndpoint)
 	}
 
-	var readcontextmetadataEndpoint endpoint.Endpoint
-	{
-		readcontextmetadataEndpoint = grpctransport.NewClient(
-			conn,
-			"TEST.TestService",
-			"ReadContextMetadata",
-			svc.EncodeGRPCReadContextMetadataRequest,
-			svc.DecodeGRPCReadContextMetadataResponse,
-			pb.EmptyMessage{},
-			grpctransport.ClientBefore(PrintContextValues),
-			//grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "ReadContextMetadata", logger)),
-		).Endpoint()
-		//readcontextmetadataEndpoint = opentracing.TraceClient(tracer, "ReadContextMetadata")(readcontextmetadataEndpoint)
-		//readcontextmetadataEndpoint = limiter(readcontextmetadataEndpoint)
-		//readcontextmetadataEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
-		//Name:    "ReadContextMetadata",
-		//Timeout: 30 * time.Second,
-		//}))(readcontextmetadataEndpoint)
-	}
-
 	return svc.Endpoints{
 
 		ReadContextTestValueEndpoint: readcontexttestvalueEndpoint,
-		ReadContextMetadataEndpoint:  readcontextmetadataEndpoint,
 	}
-}
-
-func PrintContextValues(ctx context.Context, inMD *metadata.MD) context.Context {
-	md, ok := metadata.FromContext(ctx)
-	fmt.Println("truss?: ", md["test"])
-	fmt.Printf("grpc/client.go in before: %p %v\n", inMD, inMD)
-	fmt.Printf("grpc/client.go context before: %p %v\n", &md, &md)
-	*inMD = md
-	fmt.Printf("grpc/client.go in after: %p %v\n", inMD, inMD)
-	_ = ok
-
-	return ctx
 }

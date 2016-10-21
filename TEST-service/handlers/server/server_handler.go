@@ -34,15 +34,6 @@ func (s TESTService) ReadContextTestValue(ctx context.Context, in *pb.EmptyMessa
 	return &response, nil
 }
 
-// ReadContextMetadata implements Service.
-func (s TESTService) ReadContextMetadata(ctx context.Context, in *pb.EmptyMessage) (*pb.EmptyMessage, error) {
-	_ = ctx
-	_ = in
-	response := pb.EmptyMessage{}
-	return &response, nil
-}
-
 type Service interface {
 	ReadContextTestValue(ctx context.Context, in *pb.EmptyMessage) (*pb.EmptyMessage, error)
-	ReadContextMetadata(ctx context.Context, in *pb.EmptyMessage) (*pb.EmptyMessage, error)
 }

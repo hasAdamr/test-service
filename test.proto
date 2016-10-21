@@ -8,11 +8,12 @@ service TestService {
 
   // ReadContextTestValue will print the context value of "test" 
   // which should be "truss"
-  rpc ReadContextTestValue (EmptyMessage) returns (EmptyMessage) {}
+  rpc ReadContextTestValue (EmptyMessage) returns (EmptyMessage) {
+    option (google.api.http) = {
+      get: "/1"
+    };
 
-  // ReadContextMetadata will print the values in the grpc.metadata of the context
-  // which should be "truss"
-  rpc ReadContextMetadata (EmptyMessage) returns (EmptyMessage) {}
+  }
 }
 
 message EmptyMessage {}

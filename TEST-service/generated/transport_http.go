@@ -41,13 +41,27 @@ var (
 // on predefined paths.
 func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger) http.Handler {
 	//func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, /*tracer stdopentracing.Tracer,*/ logger log.Logger) http.Handler {
-	/*options := []httptransport.ServerOption{
-		httptransport.ServerErrorEncoder(errorEncoder),
-		httptransport.ServerErrorLogger(logger),
-	}*/
+	options := []httptransport.ServerOption{
+		httptransport.ServerBefore(moveContextValuesToHeaders),
+	}
 	m := http.NewServeMux()
 
+	m.Handle("/1", httptransport.NewServer(
+		ctx,
+		endpoints.ReadContextTestValueEndpoint,
+		HttpDecodeLogger(DecodeHTTPReadContextTestValueZeroRequest, logger),
+		EncodeHTTPGenericResponse,
+		options...,
+	))
 	return m
+}
+
+func moveHeadersToContext(ctx context.Context, r *http.Request) context.Context {
+	for k, v := range r.Header {
+		ctx = context.WithValue(ctx, k, v)
+	}
+
+	return ctx
 }
 
 func HttpDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) httptransport.DecodeRequestFunc {
@@ -97,9 +111,88 @@ type errorWrapper struct {
 
 // Server Decode
 
+// DecodeHTTPReadContextTestValueZeroRequest is a transport/http.DecodeRequestFunc that
+// decodes a JSON-encoded readcontexttestvalue request from the HTTP request
+// body. Primarily useful in a server.
+func DecodeHTTPReadContextTestValueZeroRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var req pb.EmptyMessage
+	err := json.NewDecoder(r.Body).Decode(&req)
+	// err = io.EOF if r.Body was empty
+	if err != nil && err != io.EOF {
+		return nil, errors.Wrap(err, "decoding body of http request")
+	}
+
+	pathParams, err := PathParams(r.URL.Path, "/1")
+	_ = pathParams
+	if err != nil {
+		fmt.Printf("Error while reading path params: %v\n", err)
+		return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
+	}
+	queryParams, err := QueryParams(r.URL.Query())
+	_ = queryParams
+	if err != nil {
+		fmt.Printf("Error while reading query params: %v\n", err)
+		return nil, errors.Wrapf(err, "Error while reading query params: %v", r.URL.Query())
+	}
+
+	return &req, err
+}
+
 // Client Decode
 
+// DecodeHTTPReadContextTestValue is a transport/http.DecodeResponseFunc that decodes
+// a JSON-encoded EmptyMessage response from the HTTP response body.
+// If the response has a non-200 status code, we will interpret that as an
+// error and attempt to decode the specific error message from the response
+// body. Primarily useful in a client.
+func DecodeHTTPReadContextTestValueResponse(_ context.Context, r *http.Response) (interface{}, error) {
+	if r.StatusCode != http.StatusOK {
+		return nil, errorDecoder(r)
+	}
+	var resp pb.EmptyMessage
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	return &resp, err
+}
+
 // Client Encode
+
+// EncodeHTTPReadContextTestValueZeroRequest is a transport/http.EncodeRequestFunc
+// that encodes a readcontexttestvalue request into the various portions of
+// the http request (path, query, and body).
+func EncodeHTTPReadContextTestValueZeroRequest(_ context.Context, r *http.Request, request interface{}) error {
+	fmt.Printf("Encoding request %v\n", request)
+	req := request.(*pb.EmptyMessage)
+	_ = req
+
+	// Set the path parameters
+	path := strings.Join([]string{
+		"",
+		"1",
+	}, "/")
+	u, err := url.Parse(path)
+	if err != nil {
+		return errors.Wrapf(err, "couldn't unmarshal path %q", path)
+	}
+	r.URL.RawPath = u.RawPath
+	r.URL.Path = u.Path
+
+	// Set the query parameters
+	values := r.URL.Query()
+	var tmp []byte
+	_ = tmp
+
+	r.URL.RawQuery = values.Encode()
+
+	// Set the body parameters
+	var buf bytes.Buffer
+	toRet := map[string]interface{}{}
+	if err := json.NewEncoder(&buf).Encode(toRet); err != nil {
+		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
+	}
+	r.Body = ioutil.NopCloser(&buf)
+	fmt.Printf("URL: %v\n", r.URL)
+	return nil
+}
 
 // EncodeHTTPGenericResponse is a transport/http.EncodeResponseFunc that encodes
 // the response as JSON to the response writer. Primarily useful in a server.

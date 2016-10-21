@@ -100,8 +100,13 @@ th:nth-child(4) {
 | ---- | ---- | ------------ | -----------|
 | ReadContextTestValue | EmptyMessage | EmptyMessage | ReadContextTestValue will print the context value of "test"
  which should be "truss" |
-| ReadContextMetadata | EmptyMessage | EmptyMessage | ReadContextMetadata will print the values in the grpc.metadata of the context
- which should be "truss" |
 
 #### TestService - Http Methods
+
+##### GET `/1`
+
+
+
+| Parameter Name | Location | Type |
+| ---- | ---- | ------------ |
 

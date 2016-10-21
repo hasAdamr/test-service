@@ -51,7 +51,32 @@ func New(instance string) (handler.Service, error) {
 
 	//limiter := ratelimit.NewTokenBucketLimiter(jujuratelimit.NewBucketWithRate(100, 100))
 
-	return svc.Endpoints{}, nil
+	var ReadContextTestValueZeroEndpoint endpoint.Endpoint
+	{
+		ReadContextTestValueZeroEndpoint = httptransport.NewClient(
+			"get",
+			copyURL(u, "/1"),
+			svc.EncodeHTTPReadContextTestValueZeroRequest,
+			svc.DecodeHTTPReadContextTestValueResponse,
+			//httptransport.ClientBefore(opentracing.FromHTTPRequest(tracer, "Sum", logger)),
+		).Endpoint()
+		/*
+			sumEndpoint = opentracing.TraceClient(tracer, "Sum")(sumEndpoint)
+			sumEndpoint = limiter(sumEndpoint)
+			sumEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
+				Name:    "Sum",
+				Timeout: 30 * time.Second,
+			}))(sumEndpoint)
+		*/
+	}
+
+	return svc.Endpoints{
+
+		ReadContextTestValueEndpoint: ReadContextTestValueZeroEndpoint,
+	}, nil
+}
+
+func moveContextValuesToHeader(ctx context.Context, r *http.Request) ctx.Context {
 }
 
 func copyURL(base *url.URL, path string) *url.URL {

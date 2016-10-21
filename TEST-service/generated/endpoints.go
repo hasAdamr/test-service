@@ -35,7 +35,6 @@ import (
 // into an Endpoints, and return it to the caller as a Service.
 type Endpoints struct {
 	ReadContextTestValueEndpoint endpoint.Endpoint
-	ReadContextMetadataEndpoint  endpoint.Endpoint
 }
 
 // Endpoints
@@ -48,31 +47,12 @@ func (e Endpoints) ReadContextTestValue(ctx context.Context, in *pb.EmptyMessage
 	return response.(*pb.EmptyMessage), nil
 }
 
-func (e Endpoints) ReadContextMetadata(ctx context.Context, in *pb.EmptyMessage) (*pb.EmptyMessage, error) {
-	response, err := e.ReadContextMetadataEndpoint(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return response.(*pb.EmptyMessage), nil
-}
-
 // Make Endpoints
 
 func MakeReadContextTestValueEndpoint(s handler.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(*pb.EmptyMessage)
 		v, err := s.ReadContextTestValue(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
-	}
-}
-
-func MakeReadContextMetadataEndpoint(s handler.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(*pb.EmptyMessage)
-		v, err := s.ReadContextMetadata(ctx, req)
 		if err != nil {
 			return nil, err
 		}
