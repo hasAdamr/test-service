@@ -4,8 +4,10 @@ package svc
 // It utilizes the transport/grpc.Server.
 
 import (
+	"fmt"
 	//stdopentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 
 	//"github.com/go-kit/kit/log"
 	//"github.com/go-kit/kit/tracing/opentracing"
@@ -17,9 +19,9 @@ import (
 
 // MakeGRPCServer makes a set of endpoints available as a gRPC AddServer.
 func MakeGRPCServer(ctx context.Context, endpoints Endpoints /*, tracer stdopentracing.Tracer, logger log.Logger*/) pb.TestServiceServer {
-	//options := []grpctransport.ServerOption{
-	//grpctransport.ServerErrorLogger(logger),
-	//}
+	options := []grpctransport.ServerOption{
+		grpctransport.ServerBefore(PrintContextValues),
+	}
 	return &grpcServer{
 		// testservice
 
@@ -28,14 +30,14 @@ func MakeGRPCServer(ctx context.Context, endpoints Endpoints /*, tracer stdopent
 			endpoints.ReadContextTestValueEndpoint,
 			DecodeGRPCReadContextTestValueRequest,
 			EncodeGRPCReadContextTestValueResponse,
-			//append(options,grpctransport.ServerBefore(opentracing.FromGRPCRequest(tracer, "ReadContextTestValue", logger)))...,
+			options...,
 		),
 		readcontextmetadata: grpctransport.NewServer(
 			ctx,
 			endpoints.ReadContextMetadataEndpoint,
 			DecodeGRPCReadContextMetadataRequest,
 			EncodeGRPCReadContextMetadataResponse,
-			//append(options,grpctransport.ServerBefore(opentracing.FromGRPCRequest(tracer, "ReadContextMetadata", logger)))...,
+			options...,
 		),
 	}
 }
@@ -125,4 +127,14 @@ func EncodeGRPCReadContextTestValueRequest(_ context.Context, request interface{
 func EncodeGRPCReadContextMetadataRequest(_ context.Context, request interface{}) (interface{}, error) {
 	req := request.(*pb.EmptyMessage)
 	return req, nil
+}
+
+func PrintContextValues(ctx context.Context, inMD *metadata.MD) context.Context {
+	md := *inMD
+	var a = md["test"]
+	fmt.Println("truss?: ", a)
+
+	ctx = metadata.NewContext(ctx, *inMD)
+
+	return ctx
 }

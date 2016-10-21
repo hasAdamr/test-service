@@ -15,6 +15,7 @@ import (
 	//appdashot "github.com/sourcegraph/appdash/opentracing"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	//"sourcegraph.com/sourcegraph/appdash"
 
 	"github.com/pkg/errors"
@@ -47,7 +48,7 @@ func main() {
 
 	var (
 		httpAddr = flag.String("http.addr", "", "HTTP address of addsvc")
-		grpcAddr = flag.String("grpc.addr", "", "gRPC (HTTP) address of addsvc")
+		grpcAddr = flag.String("grpc.addr", ":8082", "gRPC (HTTP) address of addsvc")
 		//zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka Collector host:port")
 		//appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
 		//lightstepToken = flag.String("lightstep.token", "", "Enable LightStep tracing via a LightStep access token")
@@ -56,41 +57,6 @@ func main() {
 
 	var ()
 	flag.Parse()
-
-	// This is a demonstration client, which supports multiple tracers.
-	// Your clients will probably just use one tracer.
-	//var tracer stdopentracing.Tracer
-	//{
-	//if *zipkinAddr != "" {
-	//collector, err := zipkin.NewKafkaCollector(
-	//strings.Split(*zipkinAddr, ","),
-	//zipkin.KafkaLogger(log.NewNopLogger()),
-	//)
-	//if err != nil {
-	//fmt.Fprintf(os.Stderr, "%v\n", err)
-	//os.Exit(1)
-	//}
-	//tracer, err = zipkin.NewTracer(
-	//zipkin.NewRecorder(collector, false, "localhost:8000", "addcli"),
-	//)
-	//if err != nil {
-	//fmt.Fprintf(os.Stderr, "%v\n", err)
-	//os.Exit(1)
-	//}
-	//} else if *appdashAddr != "" {
-	//tracer = appdashot.NewTracer(appdash.NewRemoteCollector(*appdashAddr))
-	//} else if *lightstepToken != "" {
-	//tracer = lightstep.NewTracer(lightstep.Options{
-	//AccessToken: *lightstepToken,
-	//})
-	//defer lightstep.FlushLightStepTracer(tracer)
-	//} else {
-	//tracer = stdopentracing.GlobalTracer() // no-op
-	//}
-	//}
-
-	// This is a demonstration client, which supports multiple transports.
-	// Your clients will probably just define and stick with 1 transport.
 
 	var (
 		service handler.Service
@@ -116,6 +82,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	var ctx = context.Background()
+	ctx = context.WithValue(ctx, "test", "truss")
+	md := metadata.Pairs("test", "truss")
+	ctx = metadata.NewContext(ctx, md)
+
 	switch *method {
 
 	case "readcontexttestvalue":
@@ -128,7 +99,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		v, err := service.ReadContextTestValue(context.Background(), request)
+		v, err := service.ReadContextTestValue(ctx, request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error calling service.ReadContextTestValue: %v\n", err)
 			os.Exit(1)
@@ -148,7 +119,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		v, err := service.ReadContextMetadata(context.Background(), request)
+		v, err := service.ReadContextMetadata(ctx, request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error calling service.ReadContextMetadata: %v\n", err)
 			os.Exit(1)
