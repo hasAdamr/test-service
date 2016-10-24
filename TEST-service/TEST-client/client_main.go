@@ -50,7 +50,7 @@ func main() {
 		err     error
 	)
 	if *httpAddr != "" {
-		service, err = httpclient.New(*httpAddr)
+		service, err = httpclient.New(*httpAddr, httpclient.CtxValuesToSend([]string{"Auth-truss"}))
 	} else if *grpcAddr != "" {
 		conn, err := grpc.Dial(*grpcAddr, grpc.WithInsecure(), grpc.WithTimeout(time.Second))
 		if err != nil {
