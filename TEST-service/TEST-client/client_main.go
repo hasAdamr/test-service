@@ -68,6 +68,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx := context.WithValue(context.Background(), "Auth-truss", "kinda secret")
+
 	switch *method {
 
 	case "readcontexttestvalue":
@@ -79,7 +81,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		v, err := service.ReadContextTestValue(context.Background(), request)
+		v, err := service.ReadContextTestValue(ctx, request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error calling service.ReadContextTestValue: %v\n", err)
 			os.Exit(1)

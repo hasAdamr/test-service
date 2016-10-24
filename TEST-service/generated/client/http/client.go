@@ -3,6 +3,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -25,11 +26,13 @@ var (
 // instance. We expect instance to come from a service discovery system, so
 // likely of the form "host:port".
 func New(instance string, options ...ClientOption) (handler.Service, error) {
-	var cc *clientConfig
+	var cc clientConfig
 
 	for _, f := range options {
-		_ = f(cc)
+		_ = f(&cc)
 	}
+
+	fmt.Println("cc headers ", cc.headers)
 
 	clientOptions := []httptransport.ClientOption{
 		contextValuesToHttpHeaders(cc.headers),
@@ -73,12 +76,13 @@ type clientConfig struct {
 // ClientOption is a function that modifies the client config
 type ClientOption func(*clientConfig) error
 
-// CtxValuesToSend will send specified keys as headers in http request with
-// values that the context contains for those keys. Values must be strings.
+// CtxValuesToSend configures the http client to pull the specified keys out of
+// the context and add them to the http request as headers.  Note that keys
+// will have net/http.CanonicalHeaderKey called on them before being send over
+// the wire and that is the form they will be available in the server context.
 func CtxValuesToSend(keys []string) ClientOption {
 	return func(o *clientConfig) error {
 		o.headers = keys
-
 		return nil
 	}
 }
@@ -88,7 +92,7 @@ func contextValuesToHttpHeaders(keys []string) httptransport.ClientOption {
 		func(ctx context.Context, r *http.Request) context.Context {
 			for _, k := range keys {
 				if v, ok := ctx.Value(k).(string); ok {
-					r.Header[k] = append(r.Header[k], v)
+					r.Header.Set(k, v)
 				}
 			}
 

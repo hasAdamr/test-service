@@ -37,10 +37,9 @@ var (
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
 func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger) http.Handler {
-	/*options := []httptransport.ServerOption{
-		httptransport.ServerErrorEncoder(errorEncoder),
-		httptransport.ServerErrorLogger(logger),
-	}*/
+	options := []httptransport.ServerOption{
+		httptransport.ServerBefore(headersToContext),
+	}
 	m := http.NewServeMux()
 
 	m.Handle("/1", httptransport.NewServer(
@@ -48,7 +47,7 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 		endpoints.ReadContextTestValueEndpoint,
 		HttpDecodeLogger(DecodeHTTPReadContextTestValueZeroRequest, logger),
 		EncodeHTTPGenericResponse,
-		//options...,
+		options...,
 	))
 	return m
 }
@@ -241,4 +240,12 @@ func QueryParams(vals url.Values) (map[string]string, error) {
 		rv[k] = v[0]
 	}
 	return rv, nil
+}
+
+func headersToContext(ctx context.Context, r *http.Request) context.Context {
+	for k, v := range r.Header {
+		ctx = context.WithValue(ctx, k, v)
+	}
+
+	return ctx
 }

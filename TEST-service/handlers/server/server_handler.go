@@ -5,6 +5,8 @@ package handler
 
 import (
 	_ "errors"
+	"fmt"
+	"net/http"
 	_ "time"
 
 	"golang.org/x/net/context"
@@ -24,8 +26,9 @@ type TESTService struct{}
 
 // ReadContextTestValue implements Service.
 func (s TESTService) ReadContextTestValue(ctx context.Context, in *pb.EmptyMessage) (*pb.EmptyMessage, error) {
-	_ = ctx
-	_ = in
+
+	fmt.Println(ctx.Value(http.CanonicalHeaderKey("Auth-truss")))
+
 	response := pb.EmptyMessage{}
 	return &response, nil
 }
