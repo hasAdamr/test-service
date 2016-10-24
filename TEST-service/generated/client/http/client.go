@@ -1,21 +1,12 @@
-// Package http provides an HTTP client for the add service.
+// Package http provides an HTTP client for the TestService service.
 
 package http
 
 import (
 	"net/url"
 	"strings"
-	//"time"
 
-	//jujuratelimit "github.com/juju/ratelimit"
-	//stdopentracing "github.com/opentracing/opentracing-go"
-	//"github.com/sony/gobreaker"
-
-	//"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
-	//"github.com/go-kit/kit/log"
-	//"github.com/go-kit/kit/ratelimit"
-	//"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"
 
 	// This Service
@@ -28,12 +19,14 @@ var (
 	_ = httptransport.NewClient
 )
 
-// New returns an AddService backed by an HTTP server living at the remote
+// New returns a service backed by an HTTP server living at the remote
 // instance. We expect instance to come from a service discovery system, so
 // likely of the form "host:port".
-
-//func New(instance string, tracer stdopentracing.Tracer, logger log.Logger) (addsvc.Service, error) {
 func New(instance string) (handler.Service, error) {
+	//options := []httptransport.ServerOption{
+	//httptransport.ServerBefore(),
+	//}
+
 	if !strings.HasPrefix(instance, "http") {
 		instance = "http://" + instance
 	}
@@ -43,14 +36,6 @@ func New(instance string) (handler.Service, error) {
 	}
 	_ = u
 
-	// We construct a single ratelimiter middleware, to limit the total outgoing
-	// QPS from this client to all methods on the remote instance. We also
-	// construct per-endpoint circuitbreaker middlewares to demonstrate how
-	// that's done, although they could easily be combined into a single breaker
-	// for the entire remote instance, too.
-
-	//limiter := ratelimit.NewTokenBucketLimiter(jujuratelimit.NewBucketWithRate(100, 100))
-
 	var ReadContextTestValueZeroEndpoint endpoint.Endpoint
 	{
 		ReadContextTestValueZeroEndpoint = httptransport.NewClient(
@@ -58,25 +43,13 @@ func New(instance string) (handler.Service, error) {
 			copyURL(u, "/1"),
 			svc.EncodeHTTPReadContextTestValueZeroRequest,
 			svc.DecodeHTTPReadContextTestValueResponse,
-			//httptransport.ClientBefore(opentracing.FromHTTPRequest(tracer, "Sum", logger)),
+			//options...,
 		).Endpoint()
-		/*
-			sumEndpoint = opentracing.TraceClient(tracer, "Sum")(sumEndpoint)
-			sumEndpoint = limiter(sumEndpoint)
-			sumEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
-				Name:    "Sum",
-				Timeout: 30 * time.Second,
-			}))(sumEndpoint)
-		*/
 	}
 
 	return svc.Endpoints{
-
 		ReadContextTestValueEndpoint: ReadContextTestValueZeroEndpoint,
 	}, nil
-}
-
-func moveContextValuesToHeader(ctx context.Context, r *http.Request) ctx.Context {
 }
 
 func copyURL(base *url.URL, path string) *url.URL {

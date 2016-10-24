@@ -14,14 +14,11 @@ import (
 	"strconv"
 	"strings"
 
-	//stdopentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
 
 	"github.com/go-kit/kit/log"
-	"github.com/pkg/errors"
-	//"github.com/go-kit/kit/endpoint"
-	//"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/pkg/errors"
 
 	// This service
 	pb "github.com/hasAdamr/test-service/TEST-service"
@@ -40,10 +37,10 @@ var (
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
 func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger) http.Handler {
-	//func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, /*tracer stdopentracing.Tracer,*/ logger log.Logger) http.Handler {
-	options := []httptransport.ServerOption{
-		httptransport.ServerBefore(moveContextValuesToHeaders),
-	}
+	/*options := []httptransport.ServerOption{
+		httptransport.ServerErrorEncoder(errorEncoder),
+		httptransport.ServerErrorLogger(logger),
+	}*/
 	m := http.NewServeMux()
 
 	m.Handle("/1", httptransport.NewServer(
@@ -51,17 +48,9 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 		endpoints.ReadContextTestValueEndpoint,
 		HttpDecodeLogger(DecodeHTTPReadContextTestValueZeroRequest, logger),
 		EncodeHTTPGenericResponse,
-		options...,
+		//options...,
 	))
 	return m
-}
-
-func moveHeadersToContext(ctx context.Context, r *http.Request) context.Context {
-	for k, v := range r.Header {
-		ctx = context.WithValue(ctx, k, v)
-	}
-
-	return ctx
 }
 
 func HttpDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) httptransport.DecodeRequestFunc {
@@ -78,20 +67,6 @@ func HttpDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) h
 func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 	code := http.StatusInternalServerError
 	msg := err.Error()
-
-	/*if e, ok := err.(httptransport.Error); ok {
-		msg = e.Err.Error()
-		switch e.Domain {
-		case httptransport.DomainDecode:
-			code = http.StatusBadRequest
-
-		case httptransport.DomainDo:
-			switch e.Err {
-			case ErrTwoZeroes, ErrMaxSizeExceeded, ErrIntOverflow:
-				code = http.StatusBadRequest
-			}
-		}
-	}*/
 
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(errorWrapper{Error: msg})
@@ -199,6 +174,8 @@ func EncodeHTTPReadContextTestValueZeroRequest(_ context.Context, r *http.Reques
 func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	return json.NewEncoder(w).Encode(response)
 }
+
+// Helper functions
 
 // PathParams takes a url and a gRPC-annotation style url template, and
 // returns a map of the named parameters in the template and their values in

@@ -1,19 +1,10 @@
-// Package grpc provides a gRPC client for the add service.
+// Package grpc provides a gRPC client for the TestService service.
 package grpc
 
 import (
-	//"time"
-
-	//jujuratelimit "github.com/juju/ratelimit"
-	//stdopentracing "github.com/opentracing/opentracing-go"
-	//"github.com/sony/gobreaker"
 	"google.golang.org/grpc"
 
-	//"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
-	//"github.com/go-kit/kit/log"
-	//"github.com/go-kit/kit/ratelimit"
-	//"github.com/go-kit/kit/tracing/opentracing"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
@@ -22,17 +13,12 @@ import (
 	handler "github.com/hasAdamr/test-service/TEST-service/handlers/server"
 )
 
-// New returns an AddService backed by a gRPC client connection. It is the
+// New returns an service backed by a gRPC client connection. It is the
 // responsibility of the caller to dial, and later close, the connection.
-func New(conn *grpc.ClientConn /*, tracer stdopentracing.Tracer, logger log.Logger*/) handler.Service {
-	// We construct a single ratelimiter middleware, to limit the total outgoing
-	// QPS from this client to all methods on the remote instance. We also
-	// construct per-endpoint circuitbreaker middlewares to demonstrate how
-	// that's done, although they could easily be combined into a single breaker
-	// for the entire remote instance, too.
-
-	//limiter := ratelimit.NewTokenBucketLimiter(jujuratelimit.NewBucketWithRate(100, 100))
-
+func New(conn *grpc.ClientConn) handler.Service {
+	//options := []grpctransport.ServerOption{
+	//grpctransport.ServerBefore(),
+	//}
 	var readcontexttestvalueEndpoint endpoint.Endpoint
 	{
 		readcontexttestvalueEndpoint = grpctransport.NewClient(
@@ -42,18 +28,11 @@ func New(conn *grpc.ClientConn /*, tracer stdopentracing.Tracer, logger log.Logg
 			svc.EncodeGRPCReadContextTestValueRequest,
 			svc.DecodeGRPCReadContextTestValueResponse,
 			pb.EmptyMessage{},
-			//grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "ReadContextTestValue", logger)),
+			//options...,
 		).Endpoint()
-		//readcontexttestvalueEndpoint = opentracing.TraceClient(tracer, "ReadContextTestValue")(readcontexttestvalueEndpoint)
-		//readcontexttestvalueEndpoint = limiter(readcontexttestvalueEndpoint)
-		//readcontexttestvalueEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
-		//Name:    "ReadContextTestValue",
-		//Timeout: 30 * time.Second,
-		//}))(readcontexttestvalueEndpoint)
 	}
 
 	return svc.Endpoints{
-
 		ReadContextTestValueEndpoint: readcontexttestvalueEndpoint,
 	}
 }

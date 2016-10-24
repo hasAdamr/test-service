@@ -5,7 +5,6 @@ package handler
 
 import (
 	_ "errors"
-	"fmt"
 	_ "time"
 
 	"golang.org/x/net/context"
@@ -27,9 +26,6 @@ type TESTService struct{}
 func (s TESTService) ReadContextTestValue(ctx context.Context, in *pb.EmptyMessage) (*pb.EmptyMessage, error) {
 	_ = ctx
 	_ = in
-
-	fmt.Println(ctx.Value("test"), " :test")
-
 	response := pb.EmptyMessage{}
 	return &response, nil
 }
