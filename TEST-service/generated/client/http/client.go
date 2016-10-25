@@ -1,15 +1,14 @@
 // Package http provides an HTTP client for the TestService service.
-
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 
 	// This Service
@@ -29,13 +28,15 @@ func New(instance string, options ...ClientOption) (handler.Service, error) {
 	var cc clientConfig
 
 	for _, f := range options {
-		_ = f(&cc)
+		err := f(&cc)
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot apply option")
+		}
 	}
 
-	fmt.Println("cc headers ", cc.headers)
-
 	clientOptions := []httptransport.ClientOption{
-		contextValuesToHttpHeaders(cc.headers),
+		httptransport.ClientBefore(
+			contextValuesToHttpHeaders(cc.headers)),
 	}
 
 	if !strings.HasPrefix(instance, "http") {
@@ -87,15 +88,14 @@ func CtxValuesToSend(keys []string) ClientOption {
 	}
 }
 
-func contextValuesToHttpHeaders(keys []string) httptransport.ClientOption {
-	return httptransport.ClientBefore(
-		func(ctx context.Context, r *http.Request) context.Context {
-			for _, k := range keys {
-				if v, ok := ctx.Value(k).(string); ok {
-					r.Header.Set(k, v)
-				}
+func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
+	return func(ctx context.Context, r *http.Request) context.Context {
+		for _, k := range keys {
+			if v, ok := ctx.Value(k).(string); ok {
+				r.Header.Set(k, v)
 			}
+		}
 
-			return ctx
-		})
+		return ctx
+	}
 }
